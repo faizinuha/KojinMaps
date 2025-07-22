@@ -204,9 +204,11 @@ export default function JapanMap() {
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-sm">J</span>
-          </div>
+          <img 
+            src="/assets/image.png" 
+            alt="JapanMaps Logo" 
+            className="w-8 h-8 object-contain"
+          />
           <h1 className="text-xl font-semibold text-gray-900">JapanMaps</h1>
         </div>
 
