@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Leaflet custom styles */
+.leaflet-container {
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom div icon styles */
+.custom-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Loading animation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow,
+    transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .leaflet-control-container {
+    display: none;
+  }
+
+  .leaflet-popup-content-wrapper {
+    max-width: 250px;
+  }
+}
+
+/* Performance optimizations */
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  will-change: transform;
+}
+
+/* Accessibility improvements */
+button:focus,
+input:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .leaflet-popup-content-wrapper {
+    background-color: #1f2937;
+    color: #f9fafb;
+  }
+
+  .leaflet-popup-tip {
+    background-color: #1f2937;
+  }
+}
+
