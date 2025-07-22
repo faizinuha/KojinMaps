@@ -10,7 +10,7 @@ import InfoModal from "./InfoModal"
 import LayersModal from "./LayersModal"
 import SettingsModal from "./SettingsModal"
 import NavigationModal from "./NavigationModal"
-
+import Image from "next/image";
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
   loading: () => (
@@ -204,11 +204,12 @@ export default function JapanMap() {
         </button>
 
         <div className="flex items-center gap-3">
-          <img 
-            src="../assets/image.png" 
-            alt="JapanMaps Logo" 
-            className="w-8 h-8 object-contain"
-          />
+         <Image
+  src="/assets/logo/logo.png"
+  alt="JapanMaps Logo"
+  width={32}
+  height={32}
+/>
           <h1 className="text-xl font-semibold text-gray-900">JapanMaps</h1>
         </div>
 
@@ -265,62 +266,11 @@ export default function JapanMap() {
         >
           <div className="p-4 h-full overflow-y-auto">
             <div className="space-y-6">
-              {/* Quick Actions */}
-              {/* <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setShowSearchModal(true)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    <Search size={14} />
-                    Search
-                  </button>
-                  <button
-                    onClick={getCurrentLocation}
-                    className="flex items-center gap-2 px-3 py-2 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                  >
-                    <Navigation size={14} />
-                    My Location
-                  </button>
-                </div>
-              </div> */ }
-
-              {/* Layer Selection */}
-              {/* <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Layers size={16} />
-                  Jenis Peta
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setActiveLayer("standard")}
-                    className={`px-3 py-2 text-xs rounded-md transition-all duration-200 ${
-                      activeLayer === "standard"
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-                    }`}
-                  >
-                    Standard
-                  </button>
-                  <button
-                    onClick={() => setActiveLayer("satellite")}
-                    className={`px-3 py-2 text-xs rounded-md transition-all duration-200 ${
-                      activeLayer === "satellite"
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-                    }`}
-                  >
-                    Satelit
-                  </button>
-                </div>
-              </div> */}
-
-              {/* Location Filters */}
+            
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <MapPin size={16} />
-                  Locates
+                  Locatesion Filters
                 </h3>
                 <div className="space-y-3">
                   {filters.map((filter) => (
