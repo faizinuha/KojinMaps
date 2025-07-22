@@ -205,7 +205,7 @@ export default function JapanMap() {
 
         <div className="flex items-center gap-3">
           <img 
-            src="/assets/image.png" 
+            src="@/assets/image.png" 
             alt="JapanMaps Logo" 
             className="w-8 h-8 object-contain"
           />
