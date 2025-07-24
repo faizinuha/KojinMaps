@@ -11,12 +11,9 @@
 !.yarn/versions
 # testing
 /coverage
-/page.tsx
-/api-test.tsx
-/page
-/api-page
-/components/api-test.tsx
-/app/page.tsx
+
+/app/test/page.tsx
+/src/components/api-test.tsx
 
 # next.js
 /.next/
