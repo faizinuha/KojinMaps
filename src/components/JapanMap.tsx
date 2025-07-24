@@ -6,11 +6,13 @@ import { useState, useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Search, Menu, X, MapPin, Navigation, Layers, Settings, Wifi, WifiOff } from "lucide-react"
 import SearchModal from "./SearchModal"
-import InfoModal from "./InfoModal"
+import InfoPanel from "./InfoModal"
 import LayersModal from "./LayersModal"
 import SettingsModal from "./SettingsModal"
 import NavigationModal from "./NavigationModal"
-import Image from "next/image";
+import CityView from "./CityView"
+import Image from "next/image"
+
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
   loading: () => (
@@ -51,12 +53,14 @@ export default function JapanMap() {
   const [mapCenter, setMapCenter] = useState<[number, number]>([35.6762, 139.6503])
   const [mapZoom, setMapZoom] = useState(13)
 
-  // Modal states
+  // Modal states - mengurangi yang tidak diperlukan
   const [showSearchModal, setShowSearchModal] = useState(false)
-  const [showInfoModal, setShowInfoModal] = useState(false)
   const [showLayersModal, setShowLayersModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showNavigationModal, setShowNavigationModal] = useState(false)
+
+  // State untuk menampilkan info panel
+  const [showInfoPanel, setShowInfoPanel] = useState(false)
 
   const [locationStats, setLocationStats] = useState({
     total: 0,
@@ -70,7 +74,7 @@ export default function JapanMap() {
       id: "toilets",
       name: "Toilet",
       icon: "🚻",
-      enabled: true,
+      enabled: false,
       color: "#3b82f6",
       apiSource: "overpass",
     },
@@ -160,11 +164,17 @@ export default function JapanMap() {
     setMapZoom(16)
     setSelectedLocation(location)
     setShowSearchModal(false)
+    setShowInfoPanel(true) // Tampilkan info panel ketika lokasi dipilih
   }, [])
 
   const handleShowInfo = useCallback((location: LocationData) => {
     setSelectedLocation(location)
-    setShowInfoModal(true)
+    setShowInfoPanel(true) // Tampilkan info panel alih-alih modal
+  }, [])
+
+  const handleShowCityView = useCallback((location: LocationData) => {
+    setSelectedLocation(location)
+    setShowInfoPanel(false) // Tutup info panel dan tampilkan city view
   }, [])
 
   const handleShowRoute = useCallback((location: LocationData) => {
@@ -172,23 +182,53 @@ export default function JapanMap() {
     setShowNavigationModal(true)
   }, [])
 
+  const handleCloseInfoPanel = useCallback(() => {
+    setShowInfoPanel(false)
+    setSelectedLocation(null)
+  }, [])
+
   const getCurrentLocation = useCallback(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const coords: [number, number] = [position.coords.latitude, position.coords.longitude]
-          setUserLocation(coords)
-          setMapCenter(coords)
-          setMapZoom(15)
-        },
-        (error) => {
-          console.error("Error getting location:", error)
-          alert("Tidak dapat mengakses lokasi Anda. Pastikan GPS aktif dan izin lokasi diberikan.")
-        },
-      )
-    } else {
+    if (!navigator.geolocation) {
       alert("Geolocation tidak didukung oleh browser Anda.")
+      return
     }
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 60000,
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords: [number, number] = [position.coords.latitude, position.coords.longitude]
+        setUserLocation(coords)
+        setMapCenter(coords)
+        setMapZoom(15)
+      },
+      (error) => {
+        let errorMessage = "Tidak dapat mengakses lokasi Anda."
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Akses lokasi ditolak. Silakan aktifkan izin lokasi di browser."
+            break
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Informasi lokasi tidak tersedia."
+            break
+          case error.TIMEOUT:
+            errorMessage = "Permintaan lokasi timeout. Coba lagi."
+            break
+          default:
+            errorMessage = "Terjadi error yang tidak diketahui saat mengakses lokasi."
+            break
+        }
+
+        console.warn("Geolocation error:", error.code, error.message)
+        alert(errorMessage)
+      },
+      options,
+    )
   }, [])
 
   return (
@@ -204,12 +244,7 @@ export default function JapanMap() {
         </button>
 
         <div className="flex items-center gap-3">
-         <Image
-  src="/assets/logo/logo.png"
-  alt="JapanMaps Logo"
-  width={32}
-  height={32}
-/>
+          <Image src="/Jepang.png" alt="JapanMaps Logo" width={32} height={32} />
           <h1 className="text-xl font-semibold text-gray-900">JapanMaps</h1>
         </div>
 
@@ -265,12 +300,29 @@ export default function JapanMap() {
           } overflow-hidden flex-shrink-0`}
         >
           <div className="p-4 h-full overflow-y-auto">
-            <div className="space-y-6">
-            
+            <div className="space-y-4">
+              {/* Info Panel - Muncul ketika lokasi dipilih */}
+              {showInfoPanel && selectedLocation && (
+                <InfoPanel
+                  location={selectedLocation}
+                  onClose={handleCloseInfoPanel}
+                  onShowRoute={handleShowRoute}
+                  onShowCityView={handleShowCityView}
+                  className="mb-4"
+                />
+              )}
+
+              {/* City View - Muncul ketika tidak ada info panel */}
+              {!showInfoPanel && selectedLocation && (
+                <div className="mb-4">
+                  <CityView location={selectedLocation} />
+                </div>
+              )}
+
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <MapPin size={16} />
-                  Locatesion Filters
+                  Location Filters
                 </h3>
                 <div className="space-y-3">
                   {filters.map((filter) => (
@@ -366,20 +418,13 @@ export default function JapanMap() {
         </main>
       </div>
 
-      {/* Modals */}
+      {/* Modal yang masih diperlukan */}
       <SearchModal
         isOpen={showSearchModal}
         onClose={() => setShowSearchModal(false)}
         onLocationSelect={handleLocationSelect}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
-      />
-
-      <InfoModal
-        isOpen={showInfoModal}
-        onClose={() => setShowInfoModal(false)}
-        location={selectedLocation}
-        onShowRoute={handleShowRoute}
       />
 
       <LayersModal

@@ -9,9 +9,10 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
 # testing
 /coverage
+/components/api-test.tsx
+/app/page.tsx
 
 # next.js
 /.next/

@@ -5,6 +5,7 @@ import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { MapContainer, Marker, Popup, useMap, useMapEvents } from "react-leaflet"
 import { getLocationsByType, getCachedLocations, setCachedLocations } from "@/lib/osm"
+import { X, MapPin, Clock, Phone, Globe, Navigation, Info } from "lucide-react"
 
 // Fix Leaflet default markers
 if (typeof window !== "undefined") {
@@ -147,6 +148,33 @@ function MapCenterUpdater({ center, zoom }: { center: [number, number]; zoom: nu
   return null
 }
 
+function ZoomControls() {
+  const map = useMap()
+  
+  return (
+    <div className="absolute bottom-6 right-6 z-50 flex flex-col" style={{ pointerEvents: 'auto' }}>
+      <button
+        className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center mb-2 hover:bg-gray-100 transition-colors border border-gray-200"
+        onClick={() => {
+          map.setZoom(map.getZoom() + 1)
+        }}
+        aria-label="Zoom in"
+      >
+        <span className="text-gray-700 text-2xl font-bold">+</span>
+      </button>
+      <button
+        className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors border border-gray-200"
+        onClick={() => {
+          map.setZoom(map.getZoom() - 1)
+        }}
+        aria-label="Zoom out"
+      >
+        <span className="text-gray-700 text-2xl font-bold">−</span>
+      </button>
+    </div>
+  )
+}
+
 // Map events handler
 function MapEventsHandler({
   onStatsUpdate,
@@ -227,6 +255,7 @@ export default function LeafletMap({
   const [isClient, setIsClient] = useState(false)
   const [loading, setLoading] = useState(false)
   const loadingRef = useRef<{ [key: string]: boolean }>({})
+  const [selectedMarker, setSelectedMarker] = useState<LocationData | null>(null)
 
   // Initialize client-side rendering
   useEffect(() => {
@@ -339,6 +368,7 @@ export default function LeafletMap({
         <MapLayerUpdater activeLayer={activeLayer} />
         <MapCenterUpdater center={mapCenter} zoom={mapZoom} />
         <MapEventsHandler onStatsUpdate={onStatsUpdate} onConnectionChange={onConnectionChange} />
+        <ZoomControls />
 
         {/* User location marker */}
         {userLocation && (
@@ -364,58 +394,12 @@ export default function LeafletMap({
               key={`${location.type}-${index}`}
               position={[location.lat, location.lon]}
               icon={createCustomIcon(filter.icon, filter.color)}
-            >
-              <Popup>
-                <div className="text-center p-2 min-w-[200px]">
-                  <h4 className="font-semibold text-base mb-2">
-                    {filter.icon} {location.name}
-                  </h4>
-                  <p className="text-xs text-gray-500 mb-2">
-                    {location.type} • via {filter.apiSource}
-                  </p>
-                  <p className="text-xs text-gray-400 mb-3">
-                    Lat: {location.lat.toFixed(4)}, Lon: {location.lon.toFixed(4)}
-                  </p>
-
-                  {location.tags && (
-                    <div className="text-left mb-3">
-                      {location.tags.opening_hours && (
-                        <p className="text-xs text-gray-600">⏰ {location.tags.opening_hours}</p>
-                      )}
-                      {location.tags.phone && <p className="text-xs text-gray-600">📞 {location.tags.phone}</p>}
-                      {location.tags.website && (
-                        <p className="text-xs text-gray-600">
-                          🌐{" "}
-                          <a
-                            href={location.tags.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                          >
-                            Website
-                          </a>
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 justify-center">
-                    <button
-                      onClick={() => onShowRoute(location)}
-                      className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
-                    >
-                      Rute
-                    </button>
-                    <button
-                      onClick={() => onShowInfo(location)}
-                      className="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700 transition-colors"
-                    >
-                      Info
-                    </button>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
+              eventHandlers={{
+                click: () => {
+                  setSelectedMarker(location)
+                }
+              }}
+            />
           )
         })}
       </MapContainer>
@@ -438,27 +422,9 @@ export default function LeafletMap({
         </div>
       </div>
 
-      {/* Zoom controls */}
-      <div className="absolute bottom-20 right-4 z-10 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden">
-        <button
-          className="p-3 hover:bg-gray-100 border-b border-gray-200 text-lg font-bold"
-          onClick={() => {
-            // Zoom in functionality would be implemented here
-          }}
-        >
-          +
-        </button>
-        <button
-          className="p-3 hover:bg-gray-100 text-lg font-bold"
-          onClick={() => {
-            // Zoom out functionality would be implemented here
-          }}
-        >
-          −
-        </button>
-      </div>
+      {/* Zoom controls sudah dipindahkan ke dalam MapContainer */}
 
-      {/* CSS for user location animation */}
+      {/* CSS for animations */}
       <style jsx>{`
         @keyframes pulse {
           0% {
@@ -470,7 +436,115 @@ export default function LeafletMap({
             opacity: 0;
           }
         }
+        
+        @keyframes slide-up {
+          0% {
+            transform: translateY(100%);
+          }
+          100% {
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out forwards;
+        }
       `}</style>
+
+      {/* Overlay to close panel when clicking outside */}
+      {selectedMarker && (
+        <div
+          className="absolute inset-0 bg-transparent z-10"
+          onClick={() => setSelectedMarker(null)}
+        />
+      )}
+      
+      {/* Bottom Info Panel (Google Maps style) */}
+      {selectedMarker && (
+        <div className="absolute bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-lg overflow-hidden z-20 transition-all duration-300 transform animate-slide-up">
+          <div className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-semibold text-lg mb-1">{selectedMarker.name}</h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  {selectedMarker.type} • {filters.find(f => f.id === selectedMarker.type)?.apiSource || 'overpass'}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedMarker(null)}
+                className="p-1 hover:bg-gray-100 rounded-full"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 mt-2">
+              {/* Coordinates */}
+              <div className="flex items-center gap-2">
+                <MapPin size={16} className="text-gray-500" />
+                <span className="text-sm">
+                  Lat: {selectedMarker.lat.toFixed(6)}, Lon: {selectedMarker.lon.toFixed(6)}
+                </span>
+              </div>
+
+              {/* Tags */}
+              {selectedMarker.tags?.opening_hours && (
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-gray-500" />
+                  <span className="text-sm">{selectedMarker.tags.opening_hours}</span>
+                </div>
+              )}
+              
+              {selectedMarker.tags?.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone size={16} className="text-gray-500" />
+                  <a href={`tel:${selectedMarker.tags.phone}`} className="text-sm text-blue-600 hover:underline">
+                    {selectedMarker.tags.phone}
+                  </a>
+                </div>
+              )}
+              
+              {selectedMarker.tags?.website && (
+                <div className="flex items-center gap-2">
+                  <Globe size={16} className="text-gray-500" />
+                  <a
+                    href={selectedMarker.tags.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    Website
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => {
+                  onShowRoute(selectedMarker);
+                  setSelectedMarker(null);
+                }}
+                className="flex-1 py-2 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+              >
+                <Navigation size={16} />
+                <span>Rute</span>
+              </button>
+              <button
+                onClick={() => {
+                  onShowInfo(selectedMarker);
+                  setSelectedMarker(null);
+                }}
+                className="flex-1 py-2 bg-gray-100 text-gray-800 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
+              >
+                <Info size={16} />
+                <span>Info Lengkap</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
