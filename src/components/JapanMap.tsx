@@ -5,11 +5,11 @@ import type React from "react"
 import { useState, useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Search, Menu, X, MapPin, Navigation, Layers, Settings, Wifi, WifiOff } from "lucide-react"
-import SearchModal from "./SearchModal"
-import InfoPanel from "./InfoModal"
-import LayersModal from "./LayersModal"
-import SettingsModal from "./SettingsModal"
-import NavigationModal from "./NavigationModal"
+import SearchPanel from "./SearchPanel"
+import InfoPanel from "./InfoPanel"
+import LayersPanel from "./LayersPanel"
+import SettingsPanel from "./SettingsPanel"
+import NavigationPanel from "./NavigationPanel"
 import CityView from "./CityView"
 import Image from "next/image"
 
@@ -54,13 +54,14 @@ export default function JapanMap() {
   const [mapZoom, setMapZoom] = useState(13)
 
   // Modal states - mengurangi yang tidak diperlukan
-  const [showSearchModal, setShowSearchModal] = useState(false)
-  const [showLayersModal, setShowLayersModal] = useState(false)
-  const [showSettingsModal, setShowSettingsModal] = useState(false)
-  const [showNavigationModal, setShowNavigationModal] = useState(false)
+  const [showSearchPanel, setShowSearchPanel] = useState(false)
+  const [showLayersPanel, setShowLayersPanel] = useState(false)
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false)
+  const [showNavigationPanel, setShowNavigationPanel] = useState(false)
 
   // State untuk menampilkan info panel
   const [showInfoPanel, setShowInfoPanel] = useState(false)
+  const [showCityView, setShowCityView] = useState(false)
 
   const [locationStats, setLocationStats] = useState({
     total: 0,
@@ -149,7 +150,7 @@ export default function JapanMap() {
     (e: React.FormEvent) => {
       e.preventDefault()
       if (searchQuery.trim()) {
-        setShowSearchModal(true)
+        setShowSearchPanel(true)
       }
     },
     [searchQuery],
@@ -163,28 +164,32 @@ export default function JapanMap() {
     setMapCenter([location.lat, location.lon])
     setMapZoom(16)
     setSelectedLocation(location)
-    setShowSearchModal(false)
+    setShowSearchPanel(false)
     setShowInfoPanel(true) // Tampilkan info panel ketika lokasi dipilih
+    setShowCityView(false)
   }, [])
 
   const handleShowInfo = useCallback((location: LocationData) => {
     setSelectedLocation(location)
     setShowInfoPanel(true) // Tampilkan info panel alih-alih modal
+    setShowCityView(false)
   }, [])
 
   const handleShowCityView = useCallback((location: LocationData) => {
     setSelectedLocation(location)
     setShowInfoPanel(false) // Tutup info panel dan tampilkan city view
+    setShowCityView(true)
   }, [])
 
   const handleShowRoute = useCallback((location: LocationData) => {
     setSelectedLocation(location)
-    setShowNavigationModal(true)
+    setShowNavigationPanel(true)
   }, [])
 
   const handleCloseInfoPanel = useCallback(() => {
     setShowInfoPanel(false)
     setSelectedLocation(null)
+    setShowCityView(false)
   }, [])
 
   const getCurrentLocation = useCallback(() => {
@@ -256,7 +261,7 @@ export default function JapanMap() {
               placeholder="Cari tempat di seluruh Jepang..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setShowSearchModal(true)}
+              onFocus={() => setShowSearchPanel(true)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
             />
           </div>
@@ -276,14 +281,14 @@ export default function JapanMap() {
             <Navigation size={18} />
           </button>
           <button
-            onClick={() => setShowLayersModal(true)}
+            onClick={() => setShowLayersPanel(true)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             title="Layer Peta"
           >
             <Layers size={18} />
           </button>
           <button
-            onClick={() => setShowSettingsModal(true)}
+            onClick={() => setShowSettingsPanel(true)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             title="Pengaturan"
           >
@@ -296,11 +301,51 @@ export default function JapanMap() {
         {/* Optimized Sidebar */}
         <aside
           className={`bg-white border-r border-gray-200 transition-all duration-300 ease-in-out ${
-            sidebarOpen ? "w-80" : "w-0"
+            sidebarOpen ? "w-96" : "w-0"
           } overflow-hidden flex-shrink-0`}
         >
           <div className="p-4 h-full overflow-y-auto">
             <div className="space-y-4">
+              {/* Search Panel */}
+              {showSearchPanel && (
+                <SearchPanel
+                  onClose={() => setShowSearchPanel(false)}
+                  onLocationSelect={handleLocationSelect}
+                  searchQuery={searchQuery}
+                  onSearchQueryChange={setSearchQuery}
+                  className="mb-4"
+                />
+              )}
+
+              {/* Layers Panel */}
+              {showLayersPanel && (
+                <LayersPanel
+                  onClose={() => setShowLayersPanel(false)}
+                  activeLayer={activeLayer}
+                  onLayerChange={setActiveLayer}
+                  className="mb-4"
+                />
+              )}
+
+              {/* Settings Panel */}
+              {showSettingsPanel && (
+                <SettingsPanel
+                  onClose={() => setShowSettingsPanel(false)}
+                  className="mb-4"
+                />
+              )}
+
+              {/* Navigation Panel */}
+              {showNavigationPanel && (
+                <NavigationPanel
+                  onClose={() => setShowNavigationPanel(false)}
+                  destination={selectedLocation}
+                  userLocation={userLocation}
+                  onLocationUpdate={setUserLocation}
+                  className="mb-4"
+                />
+              )}
+
               {/* Info Panel - Muncul ketika lokasi dipilih */}
               {showInfoPanel && selectedLocation && (
                 <InfoPanel
@@ -313,7 +358,7 @@ export default function JapanMap() {
               )}
 
               {/* City View - Muncul ketika tidak ada info panel */}
-              {!showInfoPanel && selectedLocation && (
+              {showCityView && selectedLocation && (
                 <div className="mb-4">
                   <CityView location={selectedLocation} />
                 </div>
@@ -418,31 +463,6 @@ export default function JapanMap() {
         </main>
       </div>
 
-      {/* Modal yang masih diperlukan */}
-      <SearchModal
-        isOpen={showSearchModal}
-        onClose={() => setShowSearchModal(false)}
-        onLocationSelect={handleLocationSelect}
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-      />
-
-      <LayersModal
-        isOpen={showLayersModal}
-        onClose={() => setShowLayersModal(false)}
-        activeLayer={activeLayer}
-        onLayerChange={setActiveLayer}
-      />
-
-      <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
-
-      <NavigationModal
-        isOpen={showNavigationModal}
-        onClose={() => setShowNavigationModal(false)}
-        destination={selectedLocation}
-        userLocation={userLocation}
-        onLocationUpdate={setUserLocation}
-      />
     </div>
   )
 }
