@@ -11,8 +11,22 @@ interface LocationData {
   category?: string
 }
 
+// Rate limiting untuk Nominatim API
+const NOMINATIM_RATE_LIMIT = 1000 // 1 second between requests
+let lastNominatimCall = 0
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
 // Get detailed information about a location
 export async function getLocationDetails(location: LocationData): Promise<any> {
+  // Rate limiting
+  const now = Date.now()
+  const timeSinceLastCall = now - lastNominatimCall
+  if (timeSinceLastCall < NOMINATIM_RATE_LIMIT) {
+    await delay(NOMINATIM_RATE_LIMIT - timeSinceLastCall)
+  }
+  lastNominatimCall = Date.now()
+
   try {
     // Try to get more details from Nominatim reverse geocoding
     const response = await fetch(
@@ -24,7 +38,13 @@ export async function getLocationDetails(location: LocationData): Promise<any> {
           addressdetails: "1",
           extratags: "1",
           namedetails: "1",
+          "accept-language": "ja,en",
         }),
+      {
+        headers: {
+          'User-Agent': 'JapanMaps/1.0 (https://japanmaps.app)',
+        },
+      }
     )
 
     if (!response.ok) {

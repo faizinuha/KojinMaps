@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MapPin, Clock, Phone, Globe, Star, Navigation, Share2, Heart, ImageIcon, X } from "lucide-react"
+import { MapPin, Clock, Phone, Globe, Star, Navigation, Share2, Heart, ImageIcon, X, Loader2 } from "lucide-react"
 import { getLocationDetails, addToFavorites, removeFromFavorites, isFavorite } from "@/lib/location-service"
 
 interface LocationData {
@@ -27,10 +27,12 @@ export default function InfoPanel({ location, onClose, onShowRoute, onShowCityVi
   const [details, setDetails] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [isFav, setIsFav] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (location) {
       setLoading(true)
+      setError(null)
       setIsFav(isFavorite(location))
 
       // Load detailed information
@@ -40,6 +42,7 @@ export default function InfoPanel({ location, onClose, onShowRoute, onShowCityVi
         })
         .catch((error) => {
           console.error("Error loading details:", error)
+          setError("Gagal memuat detail lokasi")
         })
         .finally(() => {
           setLoading(false)
@@ -114,8 +117,12 @@ export default function InfoPanel({ location, onClose, onShowRoute, onShowCityVi
       <div className="p-4 max-h-80 overflow-y-auto bg-white">
         {loading ? (
           <div className="flex items-center justify-center py-6">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
+            <Loader2 className="animate-spin h-6 w-6 text-red-600" />
             <span className="ml-2 text-sm text-gray-600">Memuat informasi...</span>
+          </div>
+        ) : error ? (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800">{error}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -210,7 +217,7 @@ export default function InfoPanel({ location, onClose, onShowRoute, onShowCityVi
                 <p className="text-xs font-medium text-gray-700 mb-2">Informasi Tambahan</p>
                 <div className="space-y-1">
                   {Object.entries(location.tags)
-                    .filter(([key]) => !["name", "opening_hours", "phone", "website"].includes(key))
+                    .filter(([key]) => !["name", "opening_hours", "phone", "website", "rating"].includes(key))
                     .slice(0, 3)
                     .map(([key, value]) => (
                       <div key={key} className="flex justify-between text-xs">

@@ -11,9 +11,23 @@ interface LocationData {
   category?: string
 }
 
+// Rate limiting untuk API calls
+const API_RATE_LIMIT = 1000 // 1 second between requests
+let lastApiCall = 0
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
 // Search locations across all of Japan
 export async function searchLocationJapan(query: string): Promise<LocationData[]> {
   if (!query.trim()) return []
+
+  // Rate limiting
+  const now = Date.now()
+  const timeSinceLastCall = now - lastApiCall
+  if (timeSinceLastCall < API_RATE_LIMIT) {
+    await delay(API_RATE_LIMIT - timeSinceLastCall)
+  }
+  lastApiCall = Date.now()
 
   try {
     // Use Nominatim for comprehensive Japan search
@@ -27,7 +41,13 @@ export async function searchLocationJapan(query: string): Promise<LocationData[]
           addressdetails: "1",
           extratags: "1",
           namedetails: "1",
+          "accept-language": "ja,en", // Prioritize Japanese names
         }),
+      {
+        headers: {
+          'User-Agent': 'JapanMaps/1.0 (https://japanmaps.app)',
+        },
+      }
     )
 
     if (!response.ok) {
@@ -54,7 +74,20 @@ export async function searchLocationJapan(query: string): Promise<LocationData[]
     }))
   } catch (error) {
     console.error("Search error:", error)
-    return []
+    // Return cached results if available
+    const cacheKey = `search-${query}`
+    const cached = localStorage.getItem(`japanmaps-cache-${cacheKey}`)
+    if (cached) {
+      try {
+        const cachedData = JSON.parse(cached)
+        if (Date.now() - cachedData.timestamp < 24 * 60 * 60 * 1000) { // 24 hours
+          return cachedData.results
+        }
+      } catch (e) {
+        console.error("Error parsing cached data:", e)
+      }
+    }
+    throw error
   }
 }
 

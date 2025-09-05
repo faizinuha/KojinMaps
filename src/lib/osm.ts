@@ -13,6 +13,12 @@ interface LocationData {
 const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
 const locationCache = new Map<string, { data: LocationData[]; timestamp: number }>()
 
+// API Rate limiting
+const API_RATE_LIMIT = 2000 // 2 seconds between Overpass API calls
+let lastOverpassCall = 0
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
 export function getCachedLocations(type: string): LocationData[] | null {
   const cached = locationCache.get(type)
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -23,6 +29,15 @@ export function getCachedLocations(type: string): LocationData[] | null {
 
 export function setCachedLocations(type: string, data: LocationData[]): void {
   locationCache.set(type, { data, timestamp: Date.now() })
+  // Also save to localStorage for persistence
+  try {
+    localStorage.setItem(`japanmaps-cache-${type}`, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }))
+  } catch (e) {
+    console.warn("Failed to save to localStorage:", e)
+  }
 }
 
 // Rate limiting
@@ -49,6 +64,20 @@ export async function getLocationsByType(
   type: string,
   bounds: [number, number, number, number] = [35.6, 139.5, 35.8, 139.8],
 ): Promise<LocationData[]> {
+  // Check localStorage cache first
+  const cacheKey = `${type}-${bounds.join(",")}`
+  try {
+    const cached = localStorage.getItem(`japanmaps-cache-${cacheKey}`)
+    if (cached) {
+      const cachedData = JSON.parse(cached)
+      if (Date.now() - cachedData.timestamp < CACHE_DURATION) {
+        return cachedData.data
+      }
+    }
+  } catch (e) {
+    console.warn("Error reading cache:", e)
+  }
+
   const queries: { [key: string]: string } = {
     toilets: 'node["amenity"="toilets"]',
     restaurants: 'node["amenity"="restaurant"]',
@@ -57,6 +86,9 @@ export async function getLocationsByType(
     temples: 'node["amenity"="place_of_worship"]["religion"="buddhist"]',
     parks: 'node["leisure"="park"]',
     banks: 'node["amenity"="bank"]',
+    hospitals: 'node["amenity"="hospital"]',
+    schools: 'node["amenity"="school"]',
+    hotels: 'node["tourism"="hotel"]',
   }
 
   const query = queries[type]
@@ -64,6 +96,14 @@ export async function getLocationsByType(
     console.warn(`Unknown location type: ${type}`)
     return []
   }
+
+  // Rate limiting for Overpass API
+  const now = Date.now()
+  const timeSinceLastCall = now - lastOverpassCall
+  if (timeSinceLastCall < API_RATE_LIMIT) {
+    await delay(API_RATE_LIMIT - timeSinceLastCall)
+  }
+  lastOverpassCall = Date.now()
 
   const overpassQuery = `
     [out:json][timeout:25];
@@ -78,6 +118,7 @@ export async function getLocationsByType(
         body: overpassQuery,
         headers: {
           "Content-Type": "text/plain",
+          "User-Agent": "JapanMaps/1.0 (https://japanmaps.app)",
         },
       })
 
@@ -87,7 +128,7 @@ export async function getLocationsByType(
 
       const data = await response.json()
 
-      return data.elements.map((el: any) => ({
+      const results = data.elements.map((el: any) => ({
         lat: el.lat,
         lon: el.lon,
         name: el.tags?.["name:ja"] || el.tags?.["name"] || getDefaultName(type),
@@ -95,9 +136,27 @@ export async function getLocationsByType(
         tags: el.tags,
         source: "overpass",
       }))
+
+      // Cache the results
+      setCachedLocations(cacheKey, results)
+      
+      return results
     } catch (error) {
       console.error(`Error fetching ${type} from Overpass:`, error)
-      return []
+      
+      // Try to return stale cache data if available
+      try {
+        const cached = localStorage.getItem(`japanmaps-cache-${cacheKey}`)
+        if (cached) {
+          const cachedData = JSON.parse(cached)
+          console.warn(`Using stale cache for ${type}`)
+          return cachedData.data || []
+        }
+      } catch (e) {
+        console.error("Error reading stale cache:", e)
+      }
+      
+      throw error
     }
   })
 }
