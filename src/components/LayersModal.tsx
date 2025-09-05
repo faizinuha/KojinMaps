@@ -44,7 +44,7 @@ export default function LayersModal({ isOpen, onClose, activeLayer, onLayerChang
             </button>
           </div>
         </div>
-
+    
         {/* Content */}
         <div className="p-4">
           <div className="space-y-3">
