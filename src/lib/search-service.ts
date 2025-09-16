@@ -56,7 +56,7 @@ export async function searchLocationJapan(query: string): Promise<LocationData[]
 
     const data = await response.json()
 
-    return data.map((item: any) => ({
+    return data.map((item: { lat: string; lon: string; namedetails: { [key: string]: string }; display_name: string; type: string; class: string; place_id: string; osm_type: string; osm_id: string; importance: number; extratags: object; }) => ({
       lat: Number.parseFloat(item.lat),
       lon: Number.parseFloat(item.lon),
       name: item.namedetails?.["name:ja"] || item.namedetails?.name || item.display_name.split(",")[0],

@@ -1,6 +1,7 @@
 "use client"
 
 import { X, Map, Satellite, Layers } from "lucide-react"
+import Image from "next/image"
 
 interface LayersPanelProps {
   onClose: () => void
@@ -61,10 +62,12 @@ export default function LayersPanel({ onClose, activeLayer, onLayerChange, class
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
-                    <img
+                    <Image
                       src={layer.preview || "/placeholder.svg"}
                       alt={layer.name}
-                      className="w-16 h-10 rounded border object-cover"
+                      width={64}
+                      height={40}
+                      className="rounded border object-cover"
                     />
                   </div>
                   <div className="flex-1">

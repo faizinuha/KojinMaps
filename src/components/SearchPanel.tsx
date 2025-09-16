@@ -184,7 +184,7 @@ export default function SearchPanel({
             ) : searchQuery.trim() ? (
               <div className="text-center py-8 text-gray-500">
                 <MapPin size={48} className="mx-auto mb-2 text-gray-300" />
-                <p>Tidak ada hasil untuk "{searchQuery}"</p>
+                <p>Tidak ada hasil untuk &quot;{searchQuery}&quot;</p>
                 <p className="text-sm mt-1">Coba kata kunci lain atau periksa ejaan</p>
               </div>
             ) : (

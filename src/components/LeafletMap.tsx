@@ -241,10 +241,8 @@ function getAreaName(center: L.LatLng): string {
 export default function LeafletMap({
   filters,
   activeLayer,
-  searchQuery,
   onStatsUpdate,
   onConnectionChange,
-  onLocationSelect,
   onShowInfo,
   onShowRoute,
   mapCenter,

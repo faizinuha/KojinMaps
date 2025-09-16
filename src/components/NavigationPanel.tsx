@@ -5,7 +5,6 @@ import { X, Navigation, MapPin, Car, Bike, User, Loader2, AlertCircle } from "lu
 import { calculateRoute } from "@/lib/routing-service"
 
 interface LocationData {
-  [x: string]: any
   lat: number
   lon: number
   name: string
@@ -88,7 +87,7 @@ export default function NavigationPanel({
     if (userLocation && destination) {
       loadRoute()
     }
-  }, [userLocation, destination, transportMode])
+  }, [userLocation, destination, transportMode, loadRoute])
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) {

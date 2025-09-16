@@ -1,11 +1,10 @@
 import {
-    X, Settings, Globe, Moon, Sun, Volume2, VolumeX, Navigation,
-    Wifi, Database, Download, Trash2, RefreshCw, Shield,
-    Bell, BellOff, Smartphone, Monitor, Palette, MapPin,
-    Clock, Languages, HelpCircle, Info
+    X, Settings, Moon, Sun,
+    Wifi, Database, Download, Trash2, RefreshCw, Shield, Bell, Palette, MapPin,
+    Languages, Info
 } from "lucide-react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface SettingsPanelProps {
     onClose: () => void
@@ -48,7 +47,7 @@ export default function SettingsPanel({ onClose, className = "" }: SettingsPanel
     const [isOnline, setIsOnline] = useState(navigator.onLine)
 
     useEffect(() => {
-        // Load settings from localStorage
+        const savedSettingsJSON = localStorage.getItem("japanmaps-settings")
         const savedSettings = localStorage.getItem("japanmaps-settings")
         if (savedSettings) {
             setSettings({ ...settings, ...JSON.parse(savedSettings) })
@@ -74,12 +73,12 @@ export default function SettingsPanel({ onClose, className = "" }: SettingsPanel
             window.removeEventListener('online', handleOnline)
             window.removeEventListener('offline', handleOffline)
         }
-    }, [])
+    }, [settings])
 
     const calculateCacheSize = () => {
         // Calculate approximate cache size
         let totalSize = 0
-        for (let key in localStorage) {
+        for (const key in localStorage) {
             if (key.startsWith('japanmaps-')) {
                 totalSize += localStorage[key].length
             }
@@ -95,7 +94,7 @@ export default function SettingsPanel({ onClose, className = "" }: SettingsPanel
 
     const clearCache = () => {
         if (confirm("Hapus semua data cache? Ini akan menghapus data offline dan riwayat.")) {
-            for (let key in localStorage) {
+            for (const key in localStorage) {
                 if (key.startsWith('japanmaps-cache-') || key.startsWith('japanmaps-offline-')) {
                     localStorage.removeItem(key)
                 }
@@ -107,7 +106,7 @@ export default function SettingsPanel({ onClose, className = "" }: SettingsPanel
 
     const clearAllData = () => {
         if (confirm("Hapus SEMUA data aplikasi? Ini akan menghapus pengaturan, favorit, riwayat, dan data offline.")) {
-            for (let key in localStorage) {
+            for (const key in localStorage) {
                 if (key.startsWith('japanmaps-')) {
                     localStorage.removeItem(key)
                 }
@@ -497,8 +496,4 @@ export default function SettingsPanel({ onClose, className = "" }: SettingsPanel
             </div>
         </div>
     )
-}
-
-function useEffect(arg0: () => () => void, arg1: never[]) {
-    throw new Error("Function not implemented.")
 }
