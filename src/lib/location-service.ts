@@ -11,6 +11,13 @@ interface LocationData {
   category?: string;
 }
 
+interface LocationDetails {
+  address: string;
+  details: { [key: string]: string };
+  extratags: { [key: string]: string };
+  namedetails: { [key: string]: string };
+}
+
 // Rate limiting untuk Nominatim API
 const NOMINATIM_RATE_LIMIT = 1000; // 1 second between requests
 let lastNominatimCall = 0;
@@ -20,7 +27,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 // Get detailed information about a location
 export async function getLocationDetails(
   location: LocationData
-): Promise<object> {
+): Promise<LocationDetails> {
   // Rate limiting
   const now = Date.now();
   const timeSinceLastCall = now - lastNominatimCall;

@@ -66,10 +66,8 @@ export default function InfoPanel({
       setIsFav(isFavorite(location));
 
       // Load detailed information
-      getLocationDetails(location)
-        .then((data) => {
-          setDetails(data);
-        })
+      getLocationDetails(location as LocationData)
+        .then((data: LocationDetails) => setDetails(data))
         .catch((error) => {
           console.error('Error loading details:', error);
           setError('Gagal memuat detail lokasi');
