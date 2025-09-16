@@ -37,11 +37,11 @@ export default function InfoPanel({ location, onClose, onShowRoute, onShowCityVi
 
       // Load detailed information
       getLocationDetails(location)
-        .then((data) => {
-          setDetails(data)
-        })
-        .catch((error) => {
-          console.error("Error loading details:", error)
+       .then((data) => {
+         setDetails(data)
+       })
+       .catch((error) => {
+         console.error("Error loading details:", error)
           setError("Gagal memuat detail lokasi")
         })
         .finally(() => {
@@ -237,7 +237,7 @@ export default function InfoPanel({ location, onClose, onShowRoute, onShowCityVi
         <div className="grid grid-cols-4 gap-1">
           <button
             onClick={handleShowRoute}
-            className="flex flex-col items-center gap-1 px-2 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+             className="flex flex-col items-center gap-1 px-2 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             <Navigation size={14} />
             <span className="text-xs">Rute</span>

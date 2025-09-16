@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { getCachedLocations, getLocationsByType, setCachedLocations } from "@/lib/osm"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
+import { Clock, Globe, Info, MapPin, Navigation, Phone, X } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { MapContainer, Marker, Popup, useMap, useMapEvents } from "react-leaflet"
-import { getLocationsByType, getCachedLocations, setCachedLocations } from "@/lib/osm"
-import { X, MapPin, Clock, Phone, Globe, Navigation, Info } from "lucide-react"
 
 // Fix Leaflet default markers
 if (typeof window !== "undefined") {
@@ -359,14 +359,14 @@ export default function LeafletMap({
   return (
     <div className="h-full relative">
       <MapContainer
-        center={mapCenter}
-        zoom={mapZoom}
-        style={{ height: "100%", width: "100%" }}
-        className="z-0"
-        zoomControl={false}
+       center={mapCenter}
+       zoom={mapZoom}
+       style={{ height: "100%", width: "100%" }}
+       className="z-0"
+       zoomControl={false}
       >
-        <MapLayerUpdater activeLayer={activeLayer} />
-        <MapCenterUpdater center={mapCenter} zoom={mapZoom} />
+       <MapLayerUpdater activeLayer={activeLayer} />
+       <MapCenterUpdater center={mapCenter} zoom={mapZoom} />
         <MapEventsHandler onStatsUpdate={onStatsUpdate} onConnectionChange={onConnectionChange} />
         <ZoomControls />
 
@@ -390,14 +390,14 @@ export default function LeafletMap({
           if (!filter) return null
 
           return (
-            <Marker
+           <Marker
               key={`${location.type}-${index}`}
               position={[location.lat, location.lon]}
               icon={createCustomIcon(filter.icon, filter.color)}
               eventHandlers={{
                 click: () => {
                   setSelectedMarker(location)
-                }
+               }
               }}
             />
           )

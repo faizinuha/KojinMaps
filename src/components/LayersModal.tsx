@@ -15,14 +15,16 @@ const mapLayers = [
     name: "Standard",
     description: "Peta standar dengan jalan dan label",
     icon: Map,
-    preview: "/placeholder.svg?height=60&width=100&text=Standard",
+    // Menggunakan tile OpenStreetMap standar
+    preview: "https://tile.openstreetmap.org/13/7274/3226.png",
   },
   {
     id: "satellite",
     name: "Satelit",
     description: "Citra satelit resolusi tinggi",
     icon: Satellite,
-    preview: "/placeholder.svg?height=60&width=100&text=Satellite",
+    // Menggunakan tile Esri World Imagery (yang juga digunakan di LeafletMap)
+    preview: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/13/3226/7274",
   },
 ]
 

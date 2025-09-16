@@ -185,7 +185,7 @@ export default function CityView({ location, className = "" }: CityViewProps) {
                 {viewType === "satellite"
                   ? " Tampilan Satelit"
                   : viewType === "map"
-                    ? " Tampilan Peta"
+                  ? " Tampilan Peta"
                     : " Street View"}
               </p>
             </div>

@@ -24,7 +24,7 @@ export async function calculateRoute(
     // - Google Directions API
 
     return mockRoute
-  } catch (error) {
+   } catch (error) {
     console.error("Error calculating route:", error)
     throw new Error("Failed to calculate route")
   }

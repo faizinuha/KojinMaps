@@ -31,7 +31,7 @@ export async function getLocationDetails(location: LocationData): Promise<any> {
     // Try to get more details from Nominatim reverse geocoding
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?` +
-        new URLSearchParams({
+      new URLSearchParams({
           format: "json",
           lat: location.lat.toString(),
           lon: location.lon.toString(),
@@ -40,12 +40,12 @@ export async function getLocationDetails(location: LocationData): Promise<any> {
           namedetails: "1",
           "accept-language": "ja,en",
         }),
-      {
-        headers: {
-          'User-Agent': 'JapanMaps/1.0 (https://japanmaps.app)',
+        {
+          headers: {
+            "User-Agent": "JapanMaps/1.0 (https://japanmaps.app)",
+          },
         },
-      }
-    )
+      )
 
     if (!response.ok) {
       throw new Error(`Failed to get details: ${response.status}`)
@@ -83,13 +83,13 @@ export const favorites = {
     const favorites = this.getFavorites()
 
     // Check if already exists
-    const exists = favorites.some((fav) => fav.lat === location.lat && fav.lon === location.lon)
+    const exists = favorites.some((fav: LocationData) => fav.lat === location.lat && fav.lon === location.lon)
 
     if (!exists) {
       favorites.push(location)
       localStorage.setItem("japanmaps-favorites", JSON.stringify(favorites))
     }
-  },
+  }, 
 
   removeFromFavorites(location: LocationData): void {
     if (typeof window === "undefined") return

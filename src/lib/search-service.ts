@@ -77,7 +77,7 @@ export async function searchLocationJapan(query: string): Promise<LocationData[]
     // Return cached results if available
     const cacheKey = `search-${query}`
     const cached = localStorage.getItem(`japanmaps-cache-${cacheKey}`)
-    if (cached) {
+    if (cached !== null) {
       try {
         const cachedData = JSON.parse(cached)
         if (Date.now() - cachedData.timestamp < 24 * 60 * 60 * 1000) { // 24 hours
@@ -201,10 +201,10 @@ export const searchHistory = {
 
 // Helper function to categorize OSM types
 function getCategoryFromOSMType(type: string, osmClass: string): string {
-  const categoryMap: { [key: string]: string } = {
+ const categoryMap: { [key: string]: string } = {
     // Places
-    city: "Kota",
-    town: "Kota",
+    city: "Kota", 
+    town: "Kota", 
     village: "Desa",
     hamlet: "Dusun",
 

@@ -31,10 +31,13 @@ export function setCachedLocations(type: string, data: LocationData[]): void {
   locationCache.set(type, { data, timestamp: Date.now() })
   // Also save to localStorage for persistence
   try {
-    localStorage.setItem(`japanmaps-cache-${type}`, JSON.stringify({
-      data,
-      timestamp: Date.now()
-    }))
+    localStorage.setItem(
+      `japanmaps-cache-${type}`,
+      JSON.stringify({
+        data,
+        timestamp: Date.now(),
+      }),
+    )
   } catch (e) {
     console.warn("Failed to save to localStorage:", e)
   }
@@ -68,7 +71,7 @@ export async function getLocationsByType(
   const cacheKey = `${type}-${bounds.join(",")}`
   try {
     const cached = localStorage.getItem(`japanmaps-cache-${cacheKey}`)
-    if (cached) {
+    if (cached !== null) {
       const cachedData = JSON.parse(cached)
       if (Date.now() - cachedData.timestamp < CACHE_DURATION) {
         return cachedData.data
@@ -139,16 +142,16 @@ export async function getLocationsByType(
 
       // Cache the results
       setCachedLocations(cacheKey, results)
-      
+
       return results
     } catch (error) {
       console.error(`Error fetching ${type} from Overpass:`, error)
-      
+
       // Try to return stale cache data if available
       try {
         const cached = localStorage.getItem(`japanmaps-cache-${cacheKey}`)
-        if (cached) {
-          const cachedData = JSON.parse(cached)
+        if (cached !== null) {
+          const cachedData: { data: LocationData[] } = JSON.parse(cached)
           console.warn(`Using stale cache for ${type}`)
           return cachedData.data || []
         }
@@ -156,7 +159,7 @@ export async function getLocationsByType(
         console.error("Error reading stale cache:", e)
       }
       
-      throw error
+      return [] // Return empty array instead of throwing
     }
   })
 }
@@ -215,7 +218,7 @@ export async function searchLocation(query: string): Promise<LocationData[]> {
   if (!query.trim()) return []
 
   return makeRequest(`search-${query}`, async () => {
-    try {
+   try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=jp&limit=5&addressdetails=1`,
       )
@@ -238,9 +241,9 @@ export async function searchLocation(query: string): Promise<LocationData[]> {
         },
         source: "nominatim",
       }))
-    } catch (error) {
+     } catch (error) {
       console.error("Search error:", error)
-      return []
+      return [] // Return an empty array in case of an error
     }
   })
 }

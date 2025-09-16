@@ -135,11 +135,11 @@ export default function NavigationPanel({
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => setTransportMode("driving")}
-              className={`flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors ${
+             className={`flex flex-col items-center gap-1 p-3 rounded-lg border transition-colors ${
                 transportMode === "driving"
                   ? "border-blue-600 bg-blue-50 text-blue-700"
                   : "border-gray-200 hover:bg-gray-50"
-              }`}
+             }`}
             >
               <Car size={20} />
               <span className="text-xs">Mobil</span>

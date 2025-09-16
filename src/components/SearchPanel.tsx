@@ -44,7 +44,7 @@ export default function SearchPanel({
   }, [])
 
   // Search function with debouncing
-  const performSearch = useCallback(async (query: string) => {
+ const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setResults([])
       return
@@ -96,7 +96,7 @@ export default function SearchPanel({
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Close">
             <X size={20} />
           </button>
-        </div>
+       </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />

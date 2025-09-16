@@ -1,4 +1,4 @@
-// City View Service - Provides real-world location imagery using OpenStreetMap (free)
+// City View Service: Provides real-world location imagery using OpenStreetMap (free)
 
 interface LocationData {
   lat: number
@@ -11,11 +11,16 @@ interface LocationData {
   category?: string
 }
 
+const TILE_SIZE = 256 // Standard tile size for OpenStreetMap
+
 /**
  * Mendapatkan URL gambar peta standar dari OpenStreetMap dengan fallback
  */
 export function getOpenStreetMapStandardUrl(location: LocationData, width = 600, height = 400, zoom = 15): string {
-  // Gunakan service yang lebih reliable
+  // Calculate tile coordinates
+  const x = Math.floor(((location.lon + 180) / 360) * Math.pow(2, zoom))
+  const y = Math.floor(((1 - Math.log(Math.tan((location.lat * Math.PI) / 180) + 1 / Math.cos((location.lat * Math.PI) / 180)) / Math.PI) / 2) * Math.pow(2, zoom))
+
   return `https://tile.openstreetmap.org/${zoom}/${Math.floor(((location.lon + 180) / 360) * Math.pow(2, zoom))}/${Math.floor(((1 - Math.log(Math.tan((location.lat * Math.PI) / 180) + 1 / Math.cos((location.lat * Math.PI) / 180)) / Math.PI) / 2) * Math.pow(2, zoom))}.png`
 }
 
@@ -120,7 +125,7 @@ export function getCachedCityViewImageUrl(
   const cacheKey = `${location.lat},${location.lon}-${viewType}`
 
   if (imageUrlCache.has(cacheKey)) {
-    return imageUrlCache.get(cacheKey)!
+    return imageUrlCache.get(cacheKey) as string
   }
 
   const imageUrl = getCityViewImageUrl(location, viewType)

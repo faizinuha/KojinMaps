@@ -53,9 +53,9 @@ export default function LayersPanel({ onClose, activeLayer, onLayerChange, class
                 onClick={() => {
                   onLayerChange(layer.id)
                 }}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+               className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                   activeLayer === layer.id
-                    ? "border-blue-600 bg-blue-50"
+                 ? "border-blue-600 bg-blue-50"
                     : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                 }`}
               >
