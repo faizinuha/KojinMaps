@@ -11,6 +11,7 @@ interface LocationData {
   type: string
   tags?: { [key: string]: string }
   source?: string
+  address?:string
 }
 
 interface NavigationPanelProps {
