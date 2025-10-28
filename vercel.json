@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *.openstreetmap.org *.arcgisonline.com staticmap.openstreetmap.de; connect-src 'self' *.openstreetmap.org *.arcgisonline.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *.openstreetmap.org *.arcgisonline.com staticmap.openstreetmap.de; connect-src 'self' *.openstreetmap.org *.arcgisonline.com overpass-api.de; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
         },
         {
           "key": "X-Content-Type-Options",
