@@ -117,7 +117,7 @@ export async function getLocationsByType(
   const overpassQuery = `
     [out:json][timeout:25];
     ${query}(${bounds.join(',')});
-    out body;
+    out body 100;
   `;
 
   return makeRequest(`overpass-${type}`, async () => {

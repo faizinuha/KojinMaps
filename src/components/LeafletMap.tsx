@@ -1,5 +1,6 @@
 "use client"
 
+import { filterByZoomLevel, limitMarkersByProximity } from "@/lib/marker-optimization"
 import { getCachedLocations, getLocationsByType, setCachedLocations } from "@/lib/osm"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
@@ -321,9 +322,13 @@ export default function LeafletMap({
           allLocations.push(...locationList)
         })
 
-        setLocations(allLocations)
+        // Apply optimizations: limit markers based on proximity and zoom
+        let optimizedLocations = limitMarkersByProximity(allLocations, mapCenter, 50)
+        optimizedLocations = filterByZoomLevel(optimizedLocations, mapZoom)
+
+        setLocations(optimizedLocations)
         onStatsUpdate({
-          total: allLocations.length,
+          total: optimizedLocations.length,
           area: getAreaName(L.latLng(mapCenter[0], mapCenter[1])),
           zoom: mapZoom,
         })

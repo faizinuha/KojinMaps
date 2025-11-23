@@ -2,17 +2,17 @@
 
 import type React from "react"
 
-import { useState, useCallback, useMemo } from "react"
+import { Layers, MapPin, Menu, Navigation, Search, Settings, Wifi, WifiOff, X,  } from "lucide-react"
 import dynamic from "next/dynamic"
-import { Search, Menu, X, MapPin, Navigation, Layers, Settings, Wifi, WifiOff } from "lucide-react"
-import SearchPanel from "./SearchPanel"
+import Image from "next/image"
+import { useCallback, useMemo, useState } from "react"
+import CityView from "./CityView"
 import InfoPanel from "./InfoPanel"
 import LayersPanel from "./LayersPanel"
-import SettingsPanel from "./SettingsPanel"
 import NavigationPanel from "./NavigationPanel"
-import CityView from "./CityView"
-import Image from "next/image"
-
+import SearchPanel from "./SearchPanel"
+import SettingsPanel from "./SettingsPanel"
+import MobileOnboarding from "./MobileOnboarding"
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
   loading: () => (
@@ -62,6 +62,7 @@ export default function JapanMap() {
   // State untuk menampilkan info panel
   const [showInfoPanel, setShowInfoPanel] = useState(false)
   const [showCityView, setShowCityView] = useState(false)
+  const [onboardingComplete, setOnboardingComplete] = useState(false)
 
   const [locationStats, setLocationStats] = useState({
     total: 0,
@@ -237,7 +238,11 @@ export default function JapanMap() {
   }, [])
 
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden">
+    <>
+      {/* Mobile Onboarding - Only shows on mobile devices */}
+      <MobileOnboarding onComplete={() => setOnboardingComplete(true)} />
+      
+      <div className="h-screen flex flex-col bg-white overflow-hidden">
       {/* Fixed Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-4 z-50 shadow-sm">
         <button
@@ -464,5 +469,6 @@ export default function JapanMap() {
       </div>
 
     </div>
+    </>
   )
 }

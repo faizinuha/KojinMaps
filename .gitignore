@@ -11,7 +11,7 @@
 !.yarn/versions
 # testing
 /coverage
-
+/REFACTORING_SUMMARY.md
 /app/test/page.tsx
 /src/components/api-test.tsx
 
