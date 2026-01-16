@@ -1,4 +1,6 @@
-// Enhanced data fetching with multiple API sources and caching
+// Enhanced data fetching with multiple API sources and IndexedDB caching
+import { getCacheData, getOrSetCache, setCacheData } from './indexeddb-cache';
+
 
 interface LocationData {
   lat: number;
@@ -7,43 +9,54 @@ interface LocationData {
   type: string;
   tags?: { [key: string]: string };
   source?: string;
+  address?: string;
 }
 
 // Cache management
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes (increased from 10)
 const locationCache = new Map<
   string,
   { data: LocationData[]; timestamp: number }
 >();
 
 // API Rate limiting
-const API_RATE_LIMIT = 2000; // 2 seconds between Overpass API calls
+const API_RATE_LIMIT = 1500; // 1.5 seconds between Overpass API calls (optimized)
 let lastOverpassCall = 0;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function getCachedLocations(type: string): LocationData[] | null {
+// Japan bounds - expanded coverage
+export const JAPAN_BOUNDS = {
+  north: 45.5, // Hokkaido
+  south: 24.0, // Okinawa
+  east: 154.0,
+  west: 122.0
+};
+
+export async function getCachedLocations(type: string): Promise<LocationData[] | null> {
+  // Check memory cache first
   const cached = locationCache.get(type);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.data;
   }
+  
+  // Check IndexedDB cache
+  const dbCached = await getCacheData<LocationData[]>(type);
+  if (dbCached) {
+    // Update memory cache
+    locationCache.set(type, { data: dbCached, timestamp: Date.now() });
+    return dbCached;
+  }
+  
   return null;
 }
 
-export function setCachedLocations(type: string, data: LocationData[]): void {
+export async function setCachedLocations(type: string, data: LocationData[]): Promise<void> {
+  // Update memory cache
   locationCache.set(type, { data, timestamp: Date.now() });
-  // Also save to localStorage for persistence
-  try {
-    localStorage.setItem(
-      `japanmaps-cache-${type}`,
-      JSON.stringify({
-        data,
-        timestamp: Date.now(),
-      })
-    );
-  } catch (e) {
-    console.warn('Failed to save to localStorage:', e);
-  }
+  
+  // Save to IndexedDB
+  await setCacheData(type, data, CACHE_DURATION);
 }
 
 // Rate limiting
@@ -68,113 +81,109 @@ async function makeRequest<T>(
   }
 }
 
-// Overpass API queries
+// Overpass API queries with expanded coverage
 export async function getLocationsByType(
   type: string,
   bounds: [number, number, number, number] = [35.6, 139.5, 35.8, 139.8]
 ): Promise<LocationData[]> {
-  // Check localStorage cache first
-  const cacheKey = `${type}-${bounds.join(',')}`;
-  try {
-    const cached = localStorage.getItem(`japanmaps-cache-${cacheKey}`);
-    if (cached !== null) {
-      const cachedData = JSON.parse(cached);
-      if (Date.now() - cachedData.timestamp < CACHE_DURATION) {
-        return cachedData.data;
-      }
+  const cacheKey = `locations-${type}-${bounds.join(',')}`;
+  
+  // Use getOrSetCache pattern for cleaner code
+  return getOrSetCache(cacheKey, async () => {
+    const queries: { [key: string]: string } = {
+      toilets: 'node["amenity"="toilets"]',
+      restaurants: 'node["amenity"="restaurant"]',
+      convenience: 'node["shop"="convenience"]',
+      stations: 'node["railway"="station"]',
+      temples: 'node["amenity"="place_of_worship"]["religion"="buddhist"]',
+      shrines: 'node["amenity"="place_of_worship"]["religion"="shinto"]',
+      parks: 'node["leisure"="park"]',
+      banks: 'node["amenity"="bank"]',
+      hospitals: 'node["amenity"="hospital"]',
+      schools: 'node["amenity"="school"]',
+      hotels: 'node["tourism"="hotel"]',
+      cafes: 'node["amenity"="cafe"]',
+      atms: 'node["amenity"="atm"]',
+      pharmacies: 'node["amenity"="pharmacy"]',
+      museums: 'node["tourism"="museum"]',
+      viewpoints: 'node["tourism"="viewpoint"]',
+    };
+
+    const query = queries[type];
+    if (!query) {
+      console.warn(`Unknown location type: ${type}`);
+      return [];
     }
-  } catch (e) {
-    console.warn('Error reading cache:', e);
-  }
 
-  const queries: { [key: string]: string } = {
-    toilets: 'node["amenity"="toilets"]',
-    restaurants: 'node["amenity"="restaurant"]',
-    convenience: 'node["shop"="convenience"]',
-    stations: 'node["railway"="station"]',
-    temples: 'node["amenity"="place_of_worship"]["religion"="buddhist"]',
-    parks: 'node["leisure"="park"]',
-    banks: 'node["amenity"="bank"]',
-    hospitals: 'node["amenity"="hospital"]',
-    schools: 'node["amenity"="school"]',
-    hotels: 'node["tourism"="hotel"]',
-  };
+    // Rate limiting for Overpass API
+    const now = Date.now();
+    const timeSinceLastCall = now - lastOverpassCall;
+    if (timeSinceLastCall < API_RATE_LIMIT) {
+      await delay(API_RATE_LIMIT - timeSinceLastCall);
+    }
+    lastOverpassCall = Date.now();
 
-  const query = queries[type];
-  if (!query) {
-    console.warn(`Unknown location type: ${type}`);
-    return [];
-  }
+    const overpassQuery = `
+      [out:json][timeout:30];
+      ${query}(${bounds.join(',')});
+      out body 150;
+    `;
 
-  // Rate limiting for Overpass API
-  const now = Date.now();
-  const timeSinceLastCall = now - lastOverpassCall;
-  if (timeSinceLastCall < API_RATE_LIMIT) {
-    await delay(API_RATE_LIMIT - timeSinceLastCall);
-  }
-  lastOverpassCall = Date.now();
-
-  const overpassQuery = `
-    [out:json][timeout:25];
-    ${query}(${bounds.join(',')});
-    out body 100;
-  `;
-
-  return makeRequest(`overpass-${type}`, async () => {
-    try {
-      const response = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        body: overpassQuery,
-        headers: {
-          'Content-Type': 'text/plain',
-          'User-Agent': 'JapanMaps/1.0 (https://japanmaps.app)',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      const results = data.elements.map(
-        (el: {
-          lat: number;
-          lon: number;
-          tags: { [key: string]: string };
-        }) => ({
-          lat: el.lat,
-          lon: el.lon,
-          name:
-            el.tags?.['name:ja'] || el.tags?.['name'] || getDefaultName(type),
-          type,
-          tags: el.tags,
-          source: 'overpass',
-        })
-      );
-
-      // Cache the results
-      setCachedLocations(cacheKey, results);
-
-      return results;
-    } catch (error) {
-      console.error(`Error fetching ${type} from Overpass:`, error);
-
-      // Try to return stale cache data if available
+    return makeRequest(`overpass-${type}-${bounds.join(',')}`, async () => {
       try {
-        const cached = localStorage.getItem(`japanmaps-cache-${cacheKey}`);
-        if (cached !== null) {
-          const cachedData: { data: LocationData[] } = JSON.parse(cached);
-          console.warn(`Using stale cache for ${type}`);
-          return cachedData.data || [];
-        }
-      } catch (e) {
-        console.error('Error reading stale cache:', e);
-      }
+        const response = await fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          body: overpassQuery,
+          headers: {
+            'Content-Type': 'text/plain',
+            'User-Agent': 'KojinMaps/1.0 (Educational Project)',
+          },
+        });
 
-      return []; // Return empty array instead of throwing
-    }
-  });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        const results: LocationData[] = data.elements.map(
+          (el: {
+            lat: number;
+            lon: number;
+            tags: { [key: string]: string };
+          }) => {
+            const name = el.tags?.['name:ja'] || el.tags?.['name'] || getDefaultName(type);
+            const address = el.tags?.['addr:full'] || 
+                          `${el.tags?.['addr:city'] || ''} ${el.tags?.['addr:street'] || ''}`.trim() ||
+                          undefined;
+            
+            return {
+              lat: el.lat,
+              lon: el.lon,
+              name,
+              type,
+              tags: el.tags,
+              address,
+              source: 'overpass',
+            };
+          }
+        );
+
+        return results;
+      } catch (error) {
+        console.error(`Error fetching ${type} from Overpass:`, error);
+
+        // Try to return stale cache data if available
+        const staleCache = await getCacheData<LocationData[]>(cacheKey);
+        if (staleCache) {
+          console.warn(`Using stale cache for ${type}`);
+          return staleCache;
+        }
+
+        return [];
+      }
+    });
+  }, CACHE_DURATION);
 }
 
 // Japan Travel API (mock implementation - replace with actual API)
@@ -280,8 +289,17 @@ function getDefaultName(type: string): string {
     convenience: 'コンビニ',
     stations: '駅',
     temples: '寺院',
+    shrines: '神社',
     parks: '公園',
     banks: '銀行',
+    hospitals: '病院',
+    schools: '学校',
+    hotels: 'ホテル',
+    cafes: 'カフェ',
+    atms: 'ATM',
+    pharmacies: '薬局',
+    museums: '博物館',
+    viewpoints: '展望台',
     tourist: '観光地',
   };
 

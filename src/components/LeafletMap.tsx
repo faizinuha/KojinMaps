@@ -1,53 +1,68 @@
-"use client"
+"use client";
 
-import { filterByZoomLevel, limitMarkersByProximity } from "@/lib/marker-optimization"
-import { getCachedLocations, getLocationsByType, setCachedLocations } from "@/lib/osm"
-import L from "leaflet"
-import "leaflet/dist/leaflet.css"
-import { Clock, Globe, Info, MapPin, Navigation, Phone, X } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { MapContainer, Marker, Popup, useMap, useMapEvents } from "react-leaflet"
+import {
+  filterByZoomLevel,
+  limitMarkersByProximity,
+} from "@/lib/marker-optimization";
+import {
+  getCachedLocations,
+  getLocationsByType,
+  setCachedLocations,
+} from "@/lib/osm";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  MapContainer,
+  Marker,
+  Popup,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 
 // Fix Leaflet default markers
 if (typeof window !== "undefined") {
-  delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: () => string })._getIconUrl
+  delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: () => string })
+    ._getIconUrl;
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-    iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-  })
+    iconRetinaUrl:
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+    iconUrl:
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+    shadowUrl:
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  });
 }
 
 interface LocationData {
-  lat: number
-  lon: number
-  name: string
-  type: string
-  tags?: { [key: string]: string }
-  source?: string
+  lat: number;
+  lon: number;
+  name: string;
+  type: string;
+  tags?: { [key: string]: string };
+  source?: string;
 }
 
 interface LocationFilter {
-  id: string
-  name: string
-  icon: string
-  enabled: boolean
-  color: string
-  apiSource: string
+  id: string;
+  name: string;
+  icon: string;
+  enabled: boolean;
+  color: string;
+  apiSource: string;
 }
 
 interface LeafletMapProps {
-  filters: LocationFilter[]
-  activeLayer: string
-  searchQuery: string
-  onStatsUpdate: (stats: { total: number; area: string; zoom: number }) => void
-  onConnectionChange: (isOnline: boolean) => void
-  onLocationSelect: (location: LocationData) => void
-  onShowInfo: (location: LocationData) => void
-  onShowRoute: (location: LocationData) => void
-  mapCenter: [number, number]
-  mapZoom: number
-  userLocation: [number, number] | null
+  filters: LocationFilter[];
+  activeLayer: string;
+  searchQuery: string;
+  onStatsUpdate: (stats: { total: number; area: string; zoom: number }) => void;
+  onConnectionChange: (isOnline: boolean) => void;
+  onLocationSelect: (location: LocationData) => void;
+  onShowInfo: (location: LocationData) => void;
+  mapCenter: [number, number];
+  mapZoom: number;
+  userLocation: [number, number] | null;
 }
 
 // Custom icons for different location types
@@ -69,8 +84,8 @@ const createCustomIcon = (emoji: string, color: string) => {
     iconSize: [30, 30],
     iconAnchor: [15, 15],
     popupAnchor: [0, -15],
-  })
-}
+  });
+};
 
 // User location icon
 const createUserIcon = () => {
@@ -98,21 +113,21 @@ const createUserIcon = () => {
     className: "user-location-icon",
     iconSize: [20, 20],
     iconAnchor: [10, 10],
-  })
-}
+  });
+};
 
 // Map layer updater component
 function MapLayerUpdater({ activeLayer }: { activeLayer: string }) {
-  const map = useMap()
+  const map = useMap();
 
   useEffect(() => {
     map.eachLayer((layer) => {
       if (layer instanceof L.TileLayer) {
-        map.removeLayer(layer)
+        map.removeLayer(layer);
       }
-    })
+    });
 
-    let tileLayer: L.TileLayer
+    let tileLayer: L.TileLayer;
 
     switch (activeLayer) {
       case "satellite":
@@ -122,42 +137,55 @@ function MapLayerUpdater({ activeLayer }: { activeLayer: string }) {
             attribution:
               "&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
             maxZoom: 19,
-          },
-        )
-        break
+          }
+        );
+        break;
       default:
-        tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-        })
+        tileLayer = L.tileLayer(
+          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
+            attribution:
+              '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+          }
+        );
     }
 
-    tileLayer.addTo(map)
-  }, [activeLayer, map])
+    tileLayer.addTo(map);
+  }, [activeLayer, map]);
 
-  return null
+  return null;
 }
 
 // Map center updater
-function MapCenterUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
-  const map = useMap()
+function MapCenterUpdater({
+  center,
+  zoom,
+}: {
+  center: [number, number];
+  zoom: number;
+}) {
+  const map = useMap();
 
   useEffect(() => {
-    map.setView(center, zoom)
-  }, [center, zoom, map])
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
 
-  return null
+  return null;
 }
 
 function ZoomControls() {
-  const map = useMap()
-  
+  const map = useMap();
+
   return (
-    <div className="absolute bottom-6 right-6 z-50 flex flex-col" style={{ pointerEvents: 'auto' }}>
+    <div
+      className="absolute bottom-6 right-6 z-50 flex flex-col"
+      style={{ pointerEvents: "auto" }}
+    >
       <button
         className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center mb-2 hover:bg-gray-100 transition-colors border border-gray-200"
         onClick={() => {
-          map.setZoom(map.getZoom() + 1)
+          map.setZoom(map.getZoom() + 1);
         }}
         aria-label="Zoom in"
       >
@@ -166,14 +194,14 @@ function ZoomControls() {
       <button
         className="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors border border-gray-200"
         onClick={() => {
-          map.setZoom(map.getZoom() - 1)
+          map.setZoom(map.getZoom() - 1);
         }}
         aria-label="Zoom out"
       >
         <span className="text-gray-700 text-2xl font-bold">−</span>
       </button>
     </div>
-  )
+  );
 }
 
 // Map events handler
@@ -181,8 +209,8 @@ function MapEventsHandler({
   onStatsUpdate,
   onConnectionChange,
 }: {
-  onStatsUpdate: (stats: { total: number; area: string; zoom: number }) => void
-  onConnectionChange: (isOnline: boolean) => void
+  onStatsUpdate: (stats: { total: number; area: string; zoom: number }) => void;
+  onConnectionChange: (isOnline: boolean) => void;
 }) {
   const map = useMapEvents({
     zoomend: () => {
@@ -190,52 +218,52 @@ function MapEventsHandler({
         total: 0, // Will be updated by location loading
         area: getAreaName(map.getCenter()),
         zoom: map.getZoom(),
-      })
+      });
     },
     moveend: () => {
-      const center = map.getCenter()
+      const center = map.getCenter();
       onStatsUpdate({
         total: 0,
         area: getAreaName(center),
         zoom: map.getZoom(),
-      })
+      });
     },
-  })
+  });
 
   useEffect(() => {
-    const handleOnline = () => onConnectionChange(true)
-    const handleOffline = () => onConnectionChange(false)
+    const handleOnline = () => onConnectionChange(true);
+    const handleOffline = () => onConnectionChange(false);
 
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
-    }
-  }, [onConnectionChange])
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [onConnectionChange]);
 
-  return null
+  return null;
 }
 
 // Get area name based on coordinates
 function getAreaName(center: L.LatLng): string {
-  const lat = center.lat
-  const lng = center.lng
+  const lat = center.lat;
+  const lng = center.lng;
 
   // Simple area detection for Japan
   if (lat > 35.5 && lat < 35.9 && lng > 139.3 && lng < 139.9) {
-    return "Tokyo"
+    return "Tokyo";
   } else if (lat > 34.9 && lat < 35.1 && lng > 135.6 && lng < 135.9) {
-    return "Kyoto"
+    return "Kyoto";
   } else if (lat > 34.6 && lat < 34.8 && lng > 135.4 && lng < 135.6) {
-    return "Osaka"
+    return "Osaka";
   } else if (lat > 43.0 && lat < 43.2 && lng > 141.2 && lng < 141.5) {
-    return "Sapporo"
+    return "Sapporo";
   } else if (lat > 26.1 && lat < 26.3 && lng > 127.6 && lng < 127.8) {
-    return "Okinawa"
+    return "Okinawa";
   } else {
-    return "Japan"
+    return "Japan";
   }
 }
 
@@ -245,108 +273,133 @@ export default function LeafletMap({
   onStatsUpdate,
   onConnectionChange,
   onShowInfo,
-  onShowRoute,
   mapCenter,
   mapZoom,
   userLocation,
 }: LeafletMapProps) {
-  const [locations, setLocations] = useState<LocationData[]>([])
-  const [isClient, setIsClient] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const loadingRef = useRef<{ [key: string]: boolean }>({})
-  const [selectedMarker, setSelectedMarker] = useState<LocationData | null>(null)
+  const [locations, setLocations] = useState<LocationData[]>([]);
+  const [isClient, setIsClient] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const loadingRef = useRef<{ [key: string]: boolean }>({});
 
   // Initialize client-side rendering
   useEffect(() => {
-    setIsClient(true)
-  }, [])
+    setIsClient(true);
+  }, []);
 
   // Optimized location loading with caching and debouncing
   const loadLocations = useCallback(
     async (filterList: LocationFilter[]) => {
       if (filterList.length === 0) {
-        setLocations([])
-        onStatsUpdate({ total: 0, area: "Japan", zoom: mapZoom })
-        return
+        setLocations([]);
+        onStatsUpdate({ total: 0, area: "Japan", zoom: mapZoom });
+        return;
       }
 
-      setLoading(true)
-      const allLocations: LocationData[] = []
+      setLoading(true);
+      const allLocations: LocationData[] = [];
+
+      // Guard: Don't fetch if zoom is too low (area too big) to prevent API timeout/errors
+      if (mapZoom < 12) {
+        setLocations([]);
+        onStatsUpdate({
+          total: 0,
+          area: getAreaName(L.latLng(mapCenter[0], mapCenter[1])),
+          zoom: mapZoom,
+        });
+        setLoading(false);
+        return; // Exit early
+      }
+
+      // Guard: Don't fetch if far outside Japan to prevent useless queries
+      const isGenerallyJapan =
+        mapCenter[0] > 20 &&
+        mapCenter[0] < 50 &&
+        mapCenter[1] > 120 &&
+        mapCenter[1] < 160;
+      if (!isGenerallyJapan) {
+        setLoading(false);
+        return;
+      }
 
       // Dynamic bounds based on map center and zoom
       const bounds: [number, number, number, number] = [
-        mapCenter[0] - 0.1,
-        mapCenter[1] - 0.1,
-        mapCenter[0] + 0.1,
-        mapCenter[1] + 0.1,
-      ]
+        mapCenter[0] - 0.05, // Reduced radius for better performance
+        mapCenter[1] - 0.05,
+        mapCenter[0] + 0.05,
+        mapCenter[1] + 0.05,
+      ];
 
       try {
         // Load locations in parallel with rate limiting
         const promises = filterList.map(async (filter) => {
-          if (loadingRef.current[filter.id]) return []
+          if (loadingRef.current[filter.id]) return [];
 
-          loadingRef.current[filter.id] = true
+          loadingRef.current[filter.id] = true;
 
           try {
             // Check cache first
-            const cacheKey = `${filter.id}-${bounds.join(",")}`
-            const cached = getCachedLocations(cacheKey)
+            const cacheKey = `${filter.id}-${bounds.join(",")}`;
+            const cached = await getCachedLocations(cacheKey);
             if (cached && cached.length > 0) {
-              return cached
+              return cached;
             }
 
-            let data: LocationData[] = []
+            let data: LocationData[] = [];
 
             // Load from appropriate API based on source
             if (filter.apiSource === "overpass") {
-              data = await getLocationsByType(filter.id, bounds)
+              data = await getLocationsByType(filter.id, bounds);
             }
 
             // Cache the results
             if (data.length > 0) {
-              setCachedLocations(cacheKey, data)
+              setCachedLocations(cacheKey, data);
             }
 
-            return data
+            return data;
           } catch (error) {
-            console.error(`Error loading ${filter.id}:`, error)
-            return []
+            console.error(`Error loading ${filter.id}:`, error);
+            return [];
           } finally {
-            loadingRef.current[filter.id] = false
+            loadingRef.current[filter.id] = false;
           }
-        })
+        });
 
-        const results = await Promise.all(promises)
+        const results = await Promise.all(promises);
         results.forEach((locationList) => {
-          allLocations.push(...locationList)
-        })
+          allLocations.push(...locationList);
+        });
 
         // Apply optimizations: limit markers based on proximity and zoom
-        let optimizedLocations = limitMarkersByProximity(allLocations, mapCenter, 50)
-        optimizedLocations = filterByZoomLevel(optimizedLocations, mapZoom)
+        let optimizedLocations = limitMarkersByProximity(
+          allLocations,
+          mapCenter,
+          50
+        );
+        optimizedLocations = filterByZoomLevel(optimizedLocations, mapZoom);
 
-        setLocations(optimizedLocations)
+        setLocations(optimizedLocations);
         onStatsUpdate({
           total: optimizedLocations.length,
           area: getAreaName(L.latLng(mapCenter[0], mapCenter[1])),
           zoom: mapZoom,
-        })
+        });
       } catch (error) {
-        console.error("Error loading locations:", error)
+        console.error("Error loading locations:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     },
-    [onStatsUpdate, mapCenter, mapZoom],
-  )
+    [onStatsUpdate, mapCenter, mapZoom]
+  );
 
   // Load locations when filters or map position changes
   useEffect(() => {
     if (isClient) {
-      loadLocations(filters)
+      loadLocations(filters);
     }
-  }, [filters, isClient, loadLocations, mapCenter])
+  }, [filters, isClient, loadLocations, mapCenter]);
 
   if (!isClient) {
     return (
@@ -356,21 +409,24 @@ export default function LeafletMap({
           <p className="text-sm text-gray-600">Memuat peta...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="h-full relative">
       <MapContainer
-       center={mapCenter}
-       zoom={mapZoom}
-       style={{ height: "100%", width: "100%" }}
-       className="z-0"
-       zoomControl={false}
+        center={mapCenter}
+        zoom={mapZoom}
+        style={{ height: "100%", width: "100%" }}
+        className="z-0"
+        zoomControl={false}
       >
-       <MapLayerUpdater activeLayer={activeLayer} />
-       <MapCenterUpdater center={mapCenter} zoom={mapZoom} />
-        <MapEventsHandler onStatsUpdate={onStatsUpdate} onConnectionChange={onConnectionChange} />
+        <MapLayerUpdater activeLayer={activeLayer} />
+        <MapCenterUpdater center={mapCenter} zoom={mapZoom} />
+        <MapEventsHandler
+          onStatsUpdate={onStatsUpdate}
+          onConnectionChange={onConnectionChange}
+        />
         <ZoomControls />
 
         {/* User location marker */}
@@ -380,7 +436,8 @@ export default function LeafletMap({
               <div className="text-center p-2">
                 <h3 className="font-bold text-lg mb-2">📍 Lokasi Anda</h3>
                 <p className="text-xs text-gray-500">
-                  Lat: {userLocation[0].toFixed(6)}, Lon: {userLocation[1].toFixed(6)}
+                  Lat: {userLocation[0].toFixed(6)}, Lon:{" "}
+                  {userLocation[1].toFixed(6)}
                 </p>
               </div>
             </Popup>
@@ -389,21 +446,21 @@ export default function LeafletMap({
 
         {/* Location markers */}
         {locations.map((location, index) => {
-          const filter = filters.find((f) => f.id === location.type)
-          if (!filter) return null
+          const filter = filters.find((f) => f.id === location.type);
+          if (!filter) return null;
 
           return (
-           <Marker
+            <Marker
               key={`${location.type}-${index}`}
               position={[location.lat, location.lon]}
               icon={createCustomIcon(filter.icon, filter.color)}
               eventHandlers={{
                 click: () => {
-                  setSelectedMarker(location)
-               }
+                  onShowInfo(location);
+                },
               }}
             />
-          )
+          );
         })}
       </MapContainer>
 
@@ -439,115 +496,7 @@ export default function LeafletMap({
             opacity: 0;
           }
         }
-        
-        @keyframes slide-up {
-          0% {
-            transform: translateY(100%);
-          }
-          100% {
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out forwards;
-        }
       `}</style>
-
-      {/* Overlay to close panel when clicking outside */}
-      {selectedMarker && (
-        <div
-          className="absolute inset-0 bg-transparent z-10"
-          onClick={() => setSelectedMarker(null)}
-        />
-      )}
-      
-      {/* Bottom Info Panel (Google Maps style) */}
-      {selectedMarker && (
-        <div className="absolute bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-lg overflow-hidden z-20 transition-all duration-300 transform animate-slide-up">
-          <div className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold text-lg mb-1">{selectedMarker.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  {selectedMarker.type} • {filters.find(f => f.id === selectedMarker.type)?.apiSource || 'overpass'}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedMarker(null)}
-                className="p-1 hover:bg-gray-100 rounded-full"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 mt-2">
-              {/* Coordinates */}
-              <div className="flex items-center gap-2">
-                <MapPin size={16} className="text-gray-500" />
-                <span className="text-sm">
-                  Lat: {selectedMarker.lat.toFixed(6)}, Lon: {selectedMarker.lon.toFixed(6)}
-                </span>
-              </div>
-
-              {/* Tags */}
-              {selectedMarker.tags?.opening_hours && (
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-gray-500" />
-                  <span className="text-sm">{selectedMarker.tags.opening_hours}</span>
-                </div>
-              )}
-              
-              {selectedMarker.tags?.phone && (
-                <div className="flex items-center gap-2">
-                  <Phone size={16} className="text-gray-500" />
-                  <a href={`tel:${selectedMarker.tags.phone}`} className="text-sm text-blue-600 hover:underline">
-                    {selectedMarker.tags.phone}
-                  </a>
-                </div>
-              )}
-              
-              {selectedMarker.tags?.website && (
-                <div className="flex items-center gap-2">
-                  <Globe size={16} className="text-gray-500" />
-                  <a
-                    href={selectedMarker.tags.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    Website
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => {
-                  onShowRoute(selectedMarker);
-                  setSelectedMarker(null);
-                }}
-                className="flex-1 py-2 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
-              >
-                <Navigation size={16} />
-                <span>Rute</span>
-              </button>
-              <button
-                onClick={() => {
-                  onShowInfo(selectedMarker);
-                  setSelectedMarker(null);
-                }}
-                className="flex-1 py-2 bg-gray-100 text-gray-800 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
-              >
-                <Info size={16} />
-                <span>Info Lengkap</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  )
+  );
 }
